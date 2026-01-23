@@ -30,7 +30,7 @@ class FlatTileMapServiceDeserializer extends TileMapServiceDeserializer<FlatTile
         return FlatTileMapService.builder()
                 .properties(properties)
                 .coordTranslator(coordTranslator)
-                .urlConverter(new FlatTileURLConverter(defaultZoom, invertZoom))
+                .urlConverter(new FlatTileURLConverter(defaultZoom, invertZoom, properties.getApiKey()))
                 .build();
     }
 }

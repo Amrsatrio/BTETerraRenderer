@@ -15,6 +15,14 @@ public abstract class AbstractGuiDrawContextWrapper implements GuiDrawContextWra
 
     private final Stack<int[]> scissorDimStack = new Stack<>();
 
+    /**
+     * Some platform implementations (e.g., DrawContext scissor stack) already
+     * handle nested scissor intersections internally.
+     */
+    protected boolean usesNativeScissorStack() {
+        return false;
+    }
+
     // GL scissor
     /**
      * Converts "relative" dimension to an absolute scissor dimension
@@ -106,11 +114,20 @@ public abstract class AbstractGuiDrawContextWrapper implements GuiDrawContextWra
     public final void glPushRelativeScissor(int relX, int relY, int relWidth, int relHeight) {
         int[] scissorDimension = this.getAbsoluteScissorDimension(relX, relY, relWidth, relHeight);
         scissorDimStack.push(scissorDimension);
+        if (this.usesNativeScissorStack()) {
+            this.glEnableScissor(scissorDimension[0], scissorDimension[1], scissorDimension[2], scissorDimension[3]);
+            return;
+        }
         this.glUpdateScissorBox();
     }
 
     public final void glPopRelativeScissor() {
-        if (!scissorDimStack.isEmpty()) scissorDimStack.pop();
+        if (scissorDimStack.isEmpty()) return;
+        scissorDimStack.pop();
+        if (this.usesNativeScissorStack()) {
+            this.glDisableScissor();
+            return;
+        }
         this.glUpdateScissorBox();
     }
 
@@ -137,6 +154,7 @@ public abstract class AbstractGuiDrawContextWrapper implements GuiDrawContextWra
         // Do scissor
         int scissorX = totalMinX, scissorWidth = totalMaxX - totalMinX;
         int scissorY = totalMinY, scissorHeight = totalMaxY - totalMinY;
+        if (scissorWidth <= 0 || scissorHeight <= 0) return;
         this.glEnableScissor(scissorX, scissorY, scissorWidth, scissorHeight);
     }
 

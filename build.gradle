@@ -19,7 +19,7 @@ buildscript {
     }
     dependencies {
         classpath ('net.minecraftforge.gradle:ForgeGradle:6.0.+') { changing = true }
-		classpath 'com.github.johnrengelman:shadow:8.1.1'
+        classpath 'com.github.johnrengelman:shadow:8.1.1'
         classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
     }
 }
@@ -32,9 +32,7 @@ enum SubprojectType {
     CORE(false), FORGE(true), FABRIC(true), LIBRARY(false)
 
     public final boolean isMod
-    private SubprojectType(boolean isMod) {
-        this.isMod = isMod
-    }
+    private SubprojectType(boolean isMod) { this.isMod = isMod }
 }
 
 subprojects { p ->
@@ -70,17 +68,16 @@ subprojects { p ->
     def (javaVersionInteger, javaVersionEnum) = {
         if      (mcVersion >= 20.5) [ 21, JavaVersion.VERSION_21  ]
         else if (mcVersion >= 18  ) [ 17, JavaVersion.VERSION_17  ]
-        else                        [  8, JavaVersion.VERSION_1_8 ] // this includes CORE and LIBRARY
+        else                        [  8, JavaVersion.VERSION_1_8 ]
     }()
     println("Java version set to $javaVersionEnum for $p")
 
     if (javaVersionInteger != 8) {
-        // Java 8 does not support the command line argument '--release'
-        // so this configuration should not be applied to that version
         tasks.withType(JavaCompile).configureEach {
-            it.options.release.set javaVersionInteger
+            it.options.release.set(javaVersionInteger)
         }
     }
+
     java {
         if (subprojectType == SubprojectType.FABRIC) withSourcesJar()
         toolchain.languageVersion.set(JavaLanguageVersion.of(javaVersionInteger))
@@ -102,7 +99,7 @@ subprojects { p ->
             if (accessWidener.exists()) accessWidenerPath = accessWidener
         }
 
-        jar {}
+        jar { }
     }
 
     configurations {
@@ -116,6 +113,9 @@ subprojects { p ->
     }
 
     dependencies {
+        // Fix javax.annotation.Nonnull + friends
+        compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+        testCompileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
         if (project.modLoaderName != 'common') shadowDep project(':common')
         if (project.modLoaderName != 'common' && project.modLoaderName != 'mcconnector') {
@@ -125,30 +125,28 @@ subprojects { p ->
             shadowDep project(':draco')
         }
 
-        if (subprojectType != SubprojectType.LIBRARY) {
-            shadowDep project(':draco')
-            shadowDep project(':terraplusplus')
-            shadowDep project(':mcconnector')
-            shadowDep project(':ogc3dtiles')
-        }
-
+        // Mod projects depend on core
         if (subprojectType.isMod) {
             shadowDep project(':core')
+            shadowDep project(':terraplusplus')
         }
 
+        // Fabric deps (ONLY ONCE)
         if (subprojectType == SubprojectType.FABRIC) {
             minecraft "com.mojang:minecraft:${project.minecraftVersion}"
             mappings "net.fabricmc:yarn:${project.yarnMappings}:v2"
             modImplementation "net.fabricmc:fabric-loader:${rootProject.fabricLoaderVersion}"
-            modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabricVersion}"
+
+            // Fabric API (bundle)
+            modImplementation       "net.fabricmc.fabric-api:fabric-api:${project.fabricVersion}"
+            // With splitEnvironmentSourceSets(), also add it to the client source set
+            modClientImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabricVersion}"
         }
         else if (subprojectType == SubprojectType.FORGE) {
             minecraft "net.minecraftforge:forge:${project.minecraftVersion}-${project.forgeVersion}"
         }
 
-        // We should use shadowDep(group: ..., name: ..., version: ...) instead of shadowDep('group:name:version')
-        // since fabric's "include" configuration doesn't allow us to do the latter
-        // ps: fabric ruined it all
+        // Shadow deps
         shadowDep(group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.14.2')
         shadowDep(group: 'com.fasterxml.jackson.core', name: 'jackson-core'       , version: '2.14.2')
         shadowDep(group: 'com.fasterxml.jackson.core', name: 'jackson-databind'   , version: '2.14.2')
@@ -174,10 +172,10 @@ subprojects { p ->
         shadowDep(group: 'org.apache.xmlgraphics', name: 'batik-transcoder', version: '1.17')
         shadowDep(group: 'org.apache.xmlgraphics', name: 'batik-util'      , version: '1.17')
         shadowDep(group: 'org.apache.xmlgraphics', name: 'batik-xml'       , version: '1.17')
+        shadowDep(group: 'xml-apis', name: 'xml-apis-ext', version: '1.3.04')
         shadowDep(group: 'org.osgeo', name: 'proj4j', version: '0.1.0')
-        shadowDep(group: 'org.w3c.dom', name: 'svg' , version: '1.1.0')
-        shadowDep(group: 'org.w3c.dom', name: 'smil', version: '1.0.0')
         shadowDep(group: 'org.yaml', name: 'snakeyaml', version: '1.33')
+
         if (mcVersion > 12) { // for T++
             shadowDep(group: 'lzma', name: 'lzma', version: '0.0.1')
         }
@@ -193,16 +191,18 @@ subprojects { p ->
             shadowDep(group: 'org.w3c.css', name: 'sac', version: '1.3')
         }
 
-        compileAndTestOnly 'org.apache.logging.log4j:log4j-core:2.20.0' // Minecraft
-        compileAndTestOnly 'org.apache.commons:commons-lang3:3.12.0' // Minecraft
-        compileAndTestOnly 'commons-codec:commons-codec:1.16.0' // Minecraft; for T++
-        compileAndTestOnly 'com.google.guava:guava:31.1-jre' // Minecraft; for T++
-        compileAndTestOnly 'io.netty:netty-all:4.1.9.Final' // Minecraft; for T++
-        compileAndTestOnly 'lzma:lzma:0.0.1' // Minecraft
+        // Compile/test-only deps
+        compileAndTestOnly 'org.apache.logging.log4j:log4j-core:2.20.0'
+        compileAndTestOnly 'org.apache.commons:commons-lang3:3.12.0'
+        compileAndTestOnly 'commons-codec:commons-codec:1.16.0'
+        compileAndTestOnly 'com.google.guava:guava:31.1-jre'
+        compileAndTestOnly 'io.netty:netty-all:4.1.9.Final'
+        compileAndTestOnly 'lzma:lzma:0.0.1'
         if (!subprojectType.isMod) {
-            compileAndTestOnly 'org.joml:joml:1.10.8' // Minecraft (>=1.18)
+            compileAndTestOnly 'org.joml:joml:1.10.8'
         }
 
+        // Lombok
         compileOnly 'org.projectlombok:lombok:1.18.32'
         testCompileOnly 'org.projectlombok:lombok:1.18.32'
         annotationProcessor 'org.projectlombok:lombok:1.18.32'
@@ -214,6 +214,7 @@ subprojects { p ->
             testAnnotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
         }
 
+        // Tests
         testImplementation 'junit:junit:4.13.2'
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
         testImplementation 'org.apache.logging.log4j:log4j-core:2.20.0'
@@ -221,9 +222,7 @@ subprojects { p ->
         testRuntimeOnly 'junit:junit:4.13.2'
     }
 
-    // Since we're going to do jar-in-jar for fabric,
-    // we don't also need to "relocate" dependencies on there.
-    // only forge needs the relocations
+    // Forge-only shading/relocation
     if (subprojectType == SubprojectType.FORGE) {
 
         minecraft {
@@ -237,37 +236,31 @@ subprojects { p ->
                     workingDirectory project.file('run')
                     property 'forge.logging.markers', 'REGISTRIES'
                     property 'forge.logging.console.level', 'debug'
-                    mods {
-                        bteterrarenderer { source sourceSets.main }
-                    }
+                    mods { bteterrarenderer { source sourceSets.main } }
                 }
 
                 server {
                     workingDirectory project.file('run')
                     property 'forge.logging.markers', 'REGISTRIES'
                     property 'forge.logging.console.level', 'debug'
-                    mods {
-                        bteterrarenderer { source sourceSets.main }
-                    }
+                    mods { bteterrarenderer { source sourceSets.main } }
                 }
 
                 gameTestServer {
                     workingDirectory project.file('run')
                     property 'forge.logging.markers', 'REGISTRIES'
                     property 'forge.logging.console.level', 'debug'
-                    mods {
-                        bteterrarenderer { source sourceSets.main }
-                    }
+                    mods { bteterrarenderer { source sourceSets.main } }
                 }
 
                 data {
                     workingDirectory project.file('run')
                     property 'forge.logging.markers', 'REGISTRIES'
                     property 'forge.logging.console.level', 'debug'
-                    args '--mod', 'bteterrarenderer', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
-                    mods {
-                        bteterrarenderer { source sourceSets.main }
-                    }
+                    args '--mod', 'bteterrarenderer', '--all',
+                            '--output', file('src/generated/resources/'),
+                            '--existing', file('src/main/resources/')
+                    mods { bteterrarenderer { source sourceSets.main } }
                 }
             }
         }
@@ -299,12 +292,12 @@ subprojects { p ->
             }
 
             archiveClassifier.set(null)
-            exclude '**/module-info.class' // Java 8 bug: Minecraft will ignore the mod file if 'module-info.class' is included
-            exclude 'license/**/*' // Comes with Batik SVG
-            exclude 'about_files/**/*' // Comes with W3C SVG
-            exclude 'about.html' // Comes with W3C SVG
-            exclude 'plugin.properties' // Comes with W3C SVG
-            exclude 'kotlin/**/*' // Comes with JOML
+            exclude '**/module-info.class'
+            exclude 'license/**/*'
+            exclude 'about_files/**/*'
+            exclude 'about.html'
+            exclude 'plugin.properties'
+            exclude 'kotlin/**/*'
             exclude 'javax/xml/**/*'
             exclude 'org/w3c/dom/bootstrap/**/*'
             exclude 'org/w3c/dom/css/**/*'
@@ -320,16 +313,13 @@ subprojects { p ->
             exclude 'org/xml/sax/**/*'
         }
 
-        reobf {
-            shadowJar {}
-        }
+        reobf { shadowJar {} }
         tasks.named('shadowJar').configure { dependsOn('reobfJar') }
         tasks.named('build').configure { dependsOn('shadowJar') }
 
         sourceSets.main.resources { srcDir 'src/generated/resources' }
 
         mixin {
-            //noinspection GroovyAssignabilityCheck
             add sourceSets.main, 'mixins.bteterrarenderer.refmap.json'
             config 'mixins.bteterrarenderer.json'
         }
@@ -351,17 +341,14 @@ subprojects { p ->
 
         def target = layout.buildDirectory.dir('resources/main').get().asFile
 
-        // Replace templates
         def resourceTargets = [
-                'mcmod.info', // Forge <= 1.12.2
-                'META-INF/mods.toml', // Forge >= 1.13
-                'fabric.mod.json' // Fabric
+                'mcmod.info',
+                'META-INF/mods.toml',
+                'fabric.mod.json'
         ]
         def replaceProperties = [
-                // Version properties
                 version:                rootProject.mod_version,
                 mcversion:              project.hasProperty('minecraftVersion') ? project.minecraftVersion : '',
-                // Mod config file properties
                 authors:                rootProject.mod_authors,
                 displayName:            rootProject.mod_displayName,
                 description:            rootProject.mod_description,
@@ -373,12 +360,10 @@ subprojects { p ->
                 fabricLoaderVersion:    rootProject.fabricLoaderVersion
         ]
 
-        // this will ensure that this task is redone when the versions change.
         inputs.properties replaceProperties
 
-        filesMatching(resourceTargets) {
-            expand replaceProperties
-        }
+        filesMatching(resourceTargets) { expand replaceProperties }
+
         copy {
             from(sourceSets.main.resources) {
                 include resourceTargets
@@ -387,20 +372,17 @@ subprojects { p ->
             into target
         }
 
-        // Make .json from .lang
         doLast {
             if (subprojectType == SubprojectType.CORE) {
                 fileTree(dir: outputs.files.asPath, include: '**/*.lang').each { File langFile ->
-                    // Make json content
                     String content = langFile.getText('UTF-8').split('\n')
                             .collect { it.replaceFirst(/#.*/, '') }
                             .collect { it =~ /([^=]+)=(.+)/ }
                             .findAll { it.find() }
                             .collect { [ it.group(1), it.group(2) ] }
-                            .collect { "    \"${it[0]}\": \"${it[1].replaceAll('"', '\\"')}\"" }
+                            .collect { "    \"${it[0]}\": \"${it[1].replaceAll('\"', '\\\\\"')}\"" }
                             .join(",\n")
 
-                    // Write to json
                     File jsonFile = file(langFile.path.replaceFirst(~/\.[^.]+$/, '') + '.json')
                     jsonFile.setText("{\n$content\n}", 'UTF-8')
                 }
@@ -419,55 +401,48 @@ subprojects { p ->
         project.tasks.register('copyBuildResultToRoot', Copy) {
             group = 'build'
             description = 'Copies build result into root build directory'
-
             from "${project.projectDir}/build/libs"
             into "${rootProject.projectDir}/build/libs"
-
             dependsOn('build')
         }
-        tasks.named('build').configure {
-            finalizedBy('copyBuildResultToRoot')
-        }
+        tasks.named('build').configure { finalizedBy('copyBuildResultToRoot') }
+
         project.tasks.register('cleanModProjects', Delete) {
             group = 'build'
             description = 'Cleans mod projects'
-
             dependsOn('clean')
         }
     }
     else {
-        tasks.named('test').configure {
-            dependsOn(rootProject.tasks.gitSubmoduleUpdate)
-        }
+        tasks.named('test').configure { dependsOn(rootProject.tasks.gitSubmoduleUpdate) }
         project.tasks.register('buildNonModProjects') {
             group = 'build'
-            description = 'Builds non-mod projects.\n' +
-                    'This is because fabric requires dependency jars to be present before building.'
-
+            description = 'Builds non-mod projects.\nThis is because fabric requires dependency jars to be present before building.'
             dependsOn('build')
         }
     }
 }
 
 allprojects { p ->
-
     apply plugin: 'java'
     apply plugin: 'maven-publish'
 
-    version = "${rootProject.mod_version}-${project.name}" // ex: 1.03-forge1.12.2
+    version = "${rootProject.mod_version}-${project.name}"
     group = rootProject.mod_group
-    archivesBaseName = rootProject.mod_id
+
+    base {
+        archivesName = rootProject.mod_id
+    }
 
     compileJava.options.encoding = 'UTF-8'
 
     repositories {
         mavenCentral()
-        maven { url "https://www.jabylon.org/maven/" } // W3C SVG
-        maven { url "https://repo.spongepowered.org/maven/" } // lzma
-        maven { url "https://maven.daporkchop.net/" } // leveldb
-        maven { url "https://repo.opencollab.dev/snapshot/" } // leveldb
-        maven { url "https://jitpack.io/" } // cubicchunks, cubicworldgen, terraplusplus
-        maven { url "https://repo.elytradev.com/" } // jankson
+        maven { url "https://repo.spongepowered.org/maven/" }
+        maven { url "https://maven.daporkchop.net/" }
+        maven { url "https://repo.opencollab.dev/snapshot/" }
+        maven { url "https://jitpack.io/" }
+        maven { url "https://repo.elytradev.com/" }
     }
 }
 
@@ -475,13 +450,9 @@ publishing {
     publications {
         //noinspection GroovyAssignabilityCheck
         maven(MavenPublication) {
-            //noinspection GroovyAssignabilityCheck
             groupId = 'com.mndk'
-            //noinspection GroovyAssignabilityCheck
             artifactId = 'bteterrarenderer-core'
             version = rootProject.mod_version
-
-            //noinspection GroovyAssignabilityCheck
             from project(':core').components.java
         }
     }
@@ -497,11 +468,8 @@ tasks.register('gitSubmoduleUpdate', Exec) {
     standardOutput = stdout
     doLast {
         println('Submodule update command output: ')
-        if (stdout.size() > 0) {
-            println(stdout.toString())
-        } else {
-            println('(none)')
-        }
+        if (stdout.size() > 0) println(stdout.toString())
+        else println('(none)')
     }
 }
 
@@ -517,13 +485,11 @@ class ReplacePropertyContentTransformer implements Transformer {
     }
 
     void transform(TransformerContext context) {
-        // Copy contents
-        var buffer = new ByteArrayOutputStream()
+        def buffer = new ByteArrayOutputStream()
         IOUtil.copy(context.is, buffer)
         context.is.close()
-        var content = buffer.toString('UTF-8')
+        def content = buffer.toString('UTF-8')
 
-        // Replace if exists
         this.replacements.each { k, v ->
             if (!content.contains(k)) return
             content = content.replaceAll(k, v)
@@ -536,7 +502,7 @@ class ReplacePropertyContentTransformer implements Transformer {
     void modifyOutputStream(ZipOutputStream os, boolean b) {
         def zipWriter = new OutputStreamWriter(os, 'UTF-8')
         this.pathMap.each { path, content ->
-            var entry = new ZipEntry(path)
+            def entry = new ZipEntry(path)
             entry.time = TransformerContext.getEntryTimestamp(b, entry.time)
             os.putNextEntry(entry)
             IOUtil.copy(new ByteArrayInputStream(content.getBytes('UTF-8')), zipWriter)

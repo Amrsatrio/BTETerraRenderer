@@ -13,6 +13,7 @@ public class FlatTileURLConverter {
 
     protected final int defaultZoom;
     protected final boolean invertZoom;
+    protected final String apiKey;
 
     public final String convertToUrl(String template, FlatTileRelCoord relCoord) {
         return this.convert(template, relCoord.getX(), relCoord.getY(),
@@ -20,11 +21,13 @@ public class FlatTileURLConverter {
     }
 
     private String convert(String template, int tileX, int tileY, int absoluteZoom) {
+        String resolvedApiKey = apiKey == null ? "" : apiKey;
         return replaceRandoms(template)
                 .replace("{z}", String.valueOf(absoluteZoom))
                 .replace("{x}", String.valueOf(tileX))
                 .replace("{y}", String.valueOf(tileY))
-                .replace("{u}", tileToQuadKey(tileX, tileY, absoluteZoom));
+                .replace("{u}", tileToQuadKey(tileX, tileY, absoluteZoom))
+                .replace("{api_key}", resolvedApiKey);
     }
 
     private static String replaceRandoms(String url) {

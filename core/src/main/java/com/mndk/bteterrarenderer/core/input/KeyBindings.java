@@ -15,13 +15,16 @@ public class KeyBindings {
     public static IKeyBinding MAP_OPTIONS_KEY;
     public static IKeyBinding MOVE_UP_KEY;
     public static IKeyBinding MOVE_DOWN_KEY;
+    private static boolean registered;
 
     public static void registerAll() {
+        if (registered) return;
         GameInputManager inputManager = McConnector.client().inputManager;
         MAP_TOGGLE_KEY = inputManager.register(BTETerraRenderer.MODID, "toggle", InputKey.KEY_R);
         MAP_OPTIONS_KEY = inputManager.register(BTETerraRenderer.MODID, "options_ui", InputKey.KEY_GRAVE_ACCENT);
         MOVE_UP_KEY = inputManager.register(BTETerraRenderer.MODID, "move_up", InputKey.KEY_Y);
         MOVE_DOWN_KEY = inputManager.register(BTETerraRenderer.MODID, "move_down", InputKey.KEY_I);
+        registered = true;
     }
 
     public static void checkInputs() {

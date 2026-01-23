@@ -33,6 +33,8 @@ public class TileMapServiceCommonProperties {
     @Nullable
     private GeographicProjection hologramProjection;
     @Nullable
+    private String apiKey;
+    @Nullable
     private CacheStorage.Config cacheConfig;
 
     @JsonCreator
@@ -44,6 +46,7 @@ public class TileMapServiceCommonProperties {
             @Nullable @JsonProperty("icon_url") URL iconUrl,
             @Nullable @JsonProperty("hud_image") URL hudImageUrl,
             @Nullable @JsonProperty("hologram_projection") GeographicProjection hologramProjection,
+            @Nullable @JsonProperty("api_key") String apiKey,
             @Nullable @JsonProperty("cache") CacheStorage.Config cacheConfig
     ) {
         this.name = name;
@@ -53,6 +56,7 @@ public class TileMapServiceCommonProperties {
         this.hudImageUrl = hudImageUrl;
         this.nThreads = nThreads != null ? nThreads : AbstractTileMapService.DEFAULT_MAX_THREAD;
         this.hologramProjection = hologramProjection;
+        this.apiKey = apiKey;
         this.cacheConfig = cacheConfig;
     }
 
@@ -68,6 +72,9 @@ public class TileMapServiceCommonProperties {
         gen.writeNumberField("max_thread", this.nThreads);
         gen.writeObjectField("copyright", this.copyrightTextJson);
         gen.writeObjectField("hologram_projection", this.hologramProjection);
+        if (this.apiKey != null) {
+            gen.writeStringField("api_key", this.apiKey);
+        }
     }
 
     static TileMapServiceCommonProperties from(AbstractTileMapService<?> tms) {

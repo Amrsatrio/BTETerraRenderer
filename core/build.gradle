@@ -1,5 +1,7 @@
-sourceCompatibility = targetCompatibility = '1.8'
-
 dependencies {
-    testImplementation 'org.projectlombok:lombok:1.18.26'
+    implementation project(':terraplusplus')
+    implementation project(':ogc3dtiles')
+    implementation project(':draco')
+    implementation project(':common')
+    implementation project(':mcconnector')
 }
