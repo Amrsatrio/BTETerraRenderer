@@ -40,8 +40,7 @@ public class BufferBuildersManagerImpl implements BufferBuildersManager {
     private static final BiFunction<VertexFormat.DrawMode, Boolean, RenderPipeline> TRANSLUCENT_PIPELINE = Util.memoize(
             (drawMode, cull) -> RenderPipelines.register(RenderPipeline.builder(RenderPipelines.ENTITY_SNIPPET)
                     .withLocation("pipeline/entity_translucent")
-                    .withSampler("Sampler0")
-                    .withSampler("Sampler2")
+                    .withSampler("Sampler1")
                     .withVertexFormat(VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, drawMode)
                     .withBlend(BlendFunction.TRANSLUCENT)
                     .withCull(cull)
@@ -52,8 +51,7 @@ public class BufferBuildersManagerImpl implements BufferBuildersManager {
     private static final BiFunction<VertexFormat.DrawMode, Boolean, RenderPipeline> OPAQUE_PIPELINE = Util.memoize(
             (drawMode, cull) -> RenderPipelines.register(RenderPipeline.builder(RenderPipelines.ENTITY_SNIPPET)
                     .withLocation("pipeline/entity_opaque")
-                    .withSampler("Sampler0")
-                    .withSampler("Sampler2")
+                    .withSampler("Sampler1")
                     .withVertexFormat(VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, drawMode)
                     .withCull(cull)
                     .build()
